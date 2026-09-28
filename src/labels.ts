@@ -51,7 +51,7 @@ export class Labels {
       if (seen.has(key) && label.kind !== 'peak') continue;
       seen.add(key);
       const el = document.createElement('div');
-      el.className = `label label-${label.kind}${label.name === 'Lake Tahoe' ? ' big' : ''}`;
+      el.className = `label label-${label.kind}${label.name === 'Echo Lake' ? ' big' : ''}`;
       el.innerHTML =
         label.kind === 'peak'
           ? `<span class="peak-mark">▲</span><span class="peak-name">${label.name}</span><span class="peak-ele">${Math.round((label.ele ?? 0) * 3.28084).toLocaleString()}′</span>`
@@ -64,7 +64,7 @@ export class Labels {
       let priority = 0;
       if (label.kind === 'town') priority = 90;
       if (label.kind === 'village') priority = 55;
-      if (label.kind === 'lake') priority = label.name === 'Lake Tahoe' ? 200 : 20 + Math.log10(label.area ?? 1) * 8;
+      if (label.kind === 'lake') priority = label.name === 'Echo Lake' ? 200 : 20 + Math.log10(label.area ?? 1) * 8;
       if (label.kind === 'peak') priority = (FAMOUS.has(label.name) ? 70 : 0) + ((label.ele ?? 2000) - 2000) / 40;
       if (label.kind === 'trailhead') priority = 300;
       if (label.kind === 'road') priority = 45;

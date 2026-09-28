@@ -1,10 +1,10 @@
 // Shared timeline for "ride" films: open close on a peak with east at the top of the frame,
-// pull back to show the whole route, then a mountain biker rides it leg by leg while the gold
+// pull back to show the whole route, then a hiker moves along it leg by leg while the gold
 // line draws on behind them, pausing at named stops. Ends by pulling back to the full route.
 //
 // Times below are at 1× speed; `speed` plays everything faster except the final hold.
 
-const TRIMMER_PEAK = [-119.923, 38.8716];
+const TRIMMER_PEAK = [-71.644, 44.1608];
 const EAST_UP = -Math.PI / 2; // camera to the west, looking east
 
 // --- easing and interpolation

@@ -1,20 +1,18 @@
-// Fetches and processes all map data for the Tahoe Trails model.
+// Fetches and processes all map data for the Franconia Notch Trails model.
 //
 //   node scripts/build-data.mjs            (uses .cache/ when present)
 //   node scripts/build-data.mjs --refresh  (re-downloads everything)
 //
 // Sources:
-//   - USGS Watershed Boundary Dataset: Lake Tahoe basin outline (HUC8 16050101)
-//   - USFS National Forest System Trails (official trail inventory)
-//   - OpenStreetMap via Overpass: trails, lakes, wilderness areas, peaks, towns
+//   - OpenStreetMap via Overpass: Franconia Notch State Park outline, trails, water, wilderness, peaks, towns, roads
+//   - USFS National Forest System Trails (official White Mountain National Forest trail inventory)
 //   - AWS Terrain Tiles (Terrarium): elevation
-//   - USFS Basin Wide Trails Analysis project GIS (ArcGIS feature service)
 //
 // Outputs (public/data/):
 //   terrain.bin   Uint16 heights (meters * 4), row 0 = north edge
-//   map.json      grid metadata, basin outline, lakes, wilderness, labels
+//   map.json      grid metadata, region outline, water, wilderness, labels
 //   trails.json   trails grouped by name, with draped 3D polylines + stats
-//   future.json   approved changes from the USFS Basin Wide Trails Analysis (2026)
+//   future.json   empty planned-trail overlay placeholder
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,7 +27,7 @@ fs.mkdirSync(path.join(CACHE, 'tiles'), { recursive: true });
 fs.mkdirSync(OUT, { recursive: true });
 
 // Model extent (a little larger than the basin itself)
-const BBOX = { west: -120.275, east: -119.855, south: 38.69, north: 39.345 };
+const BBOX = { west: -71.81, east: -71.58, south: 44.06, north: 44.205 };
 const GRID_SPACING = 50; // meters between terrain samples
 const DEM_ZOOM = 12;
 const LAT0 = (BBOX.south + BBOX.north) / 2;
@@ -40,13 +38,44 @@ const HEIGHT_M = (BBOX.north - BBOX.south) * M_PER_DEG_LAT;
 
 // Hand edits, for things the source data gets wrong or leaves out
 const EXCLUDED_TRAILS = new Map([
-  // A USFS inventory line that duplicates Incense Cedar (same route, same endpoints)
-  ['Twisted Cedar Trail', 'duplicate of Incense Cedar'],
+  ['Franconia Notch Recreation Path', 'paved multi-use path, not a hiking trail'],
+  ['Franconia Notch Bike Path', 'paved multi-use path, not a hiking trail'],
+  ['Pemi Trail', 'mostly roadside path; excluded to keep mountain trails legible'],
+  ['Almost All Downhill', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Birch Run', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Chainlink', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Cloud 9', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Corner Office', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Doctor No', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Doctor No Connector', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Doctor Slab', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Fat Lip', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Holy Moley', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Home Run', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Infinity Glade', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Lightning Strike', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Limited Liability', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Lower Rough Cut', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['No Liabilty', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Partly Cloudy', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Press Play', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Red Flyer', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Ridge Run', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Rough Cut', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Stone Henge', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Sugar Shack', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Ten Four', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['The Dark Side', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Twenty Twenty', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Wild & Wooley', 'Loon downhill bike/ski park route outside the hiking-focused Notch map'],
+  ['Bickford XC ski trail', 'winter ski trail outside the hiking-focused Notch map'],
+  ['Scarface XC ski trail', 'winter ski trail outside the hiking-focused Notch map'],
 ]);
 // Roads drawn for context (not counted or listed as trails), by their OpenStreetMap name
 const CONTEXT_ROADS = [
-  'Fountain Place Road', // paved, up Trout Creek to Fountain Place, past the top of Corral
-  'Powerline Road', // dirt, from the bottom of Corral Trail toward Meyers
+  'Franconia Notch Parkway',
+  'Daniel Webster Highway',
+  'Profile Road',
 ];
 
 // Local planar coordinates in meters: x east from west edge, y north from south edge
@@ -67,7 +96,7 @@ async function cached(name, fetcher) {
 async function get(url, init) {
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'tahoe-trails-model/0.1' }, ...init });
+      const res = await fetch(url, { headers: { 'User-Agent': 'franconia-notch-trails-model/0.1' }, ...init });
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       return Buffer.from(await res.arrayBuffer());
     } catch (err) {
@@ -204,17 +233,26 @@ function densify(pts, step) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Basin outline
+// 1. Region outline
 
-console.log('Basin boundary');
-const basinGeo = JSON.parse(
-  await cached('basin.geojson', () =>
-    get('https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4/query?where=huc8%3D%2716050101%27&outFields=huc8,name&outSR=4326&f=geojson')
+console.log('Franconia Notch State Park boundary');
+const ctxBox = `${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}`;
+const regionGeo = JSON.parse(
+  await cached('franconia-notch-state-park.json', () =>
+    overpass(`[out:json][timeout:180];
+(
+  relation["name"="Franconia Notch State Park"](${ctxBox});
+  way["name"="Franconia Notch State Park"](${ctxBox});
+);
+out body geom;`)
   )
 );
-const basinRing = basinGeo.features[0].geometry.coordinates[0].map(([lon, lat]) => project(lon, lat));
-const basin = [{ outer: basinRing, inner: [], bbox: ringBBox(basinRing) }];
+const regionPolys = regionGeo.elements.flatMap(osmPolygons);
+if (!regionPolys.length) throw new Error('Could not find Franconia Notch State Park boundary in OSM');
+const basin = regionPolys.sort((a, b) => ringArea(b.outer) - ringArea(a.outer));
+const basinRing = basin[0].outer;
 const inBasin = (x, y) => pointInPolygons(x, y, basin);
+console.log(`  ${basin.length} polygon(s), largest ${(ringArea(basinRing) / 1e6).toFixed(1)} km²`);
 
 // ---------------------------------------------------------------------------
 // 2. Terrain
@@ -244,6 +282,8 @@ function demPixel(px, py) {
 }
 // Elevation at local meters (bilinear over the source DEM)
 function demAt(x, y) {
+  x = Math.max(0, Math.min(WIDTH_M, x));
+  y = Math.max(0, Math.min(HEIGHT_M, y));
   const lon = BBOX.west + x / M_PER_DEG_LON;
   const lat = BBOX.south + y / M_PER_DEG_LAT;
   const fx = lon2tile(lon) * 256 - 0.5;
@@ -277,18 +317,17 @@ fs.writeFileSync(path.join(OUT, 'terrain.bin'), Buffer.from(heights.buffer));
 console.log(`  ${gridW}×${gridH} grid, ${minEle.toFixed(0)}–${maxEle.toFixed(0)} m`);
 
 // ---------------------------------------------------------------------------
-// 3. OSM context: lakes, wilderness, peaks, towns
+// 3. OSM context: water, wilderness, peaks, towns
 
 console.log('OSM context');
-const ctxBox = `${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east}`;
 const osmCtx = JSON.parse(
   await cached('osm2.json', () =>
     overpass(`[out:json][timeout:180];
 (
  way["natural"="water"](${ctxBox});
  relation["natural"="water"](${ctxBox});
- relation["boundary"="protected_area"]["name"~"Wilderness"](38.6,-120.4,39.4,-119.7);
- relation["leisure"="nature_reserve"]["name"~"Wilderness"](38.6,-120.4,39.4,-119.7);
+ relation["boundary"="protected_area"]["name"~"Wilderness"](${ctxBox});
+ relation["leisure"="nature_reserve"]["name"~"Wilderness"](${ctxBox});
  node["natural"="peak"]["name"](${ctxBox});
  node["place"~"^(town|village|hamlet|city)$"](${ctxBox});
  way["boundary"="protected_area"]["name"~"State Park|State Recreation Area"](${ctxBox});
@@ -314,7 +353,7 @@ for (const el of osmCtx.elements) {
     for (const poly of osmPolygons(el)) {
       const area = ringArea(poly.outer);
       if (area < 12000 || !poly.outer.some(inExtent)) continue;
-      // Lake surface: low percentile of DEM along the shoreline
+      // Water surface: low percentile of DEM along the shoreline
       const shore = poly.outer.filter(inExtent).map(([x, y]) => demAt(x, y)).sort((a, b) => a - b);
       const level = shore[Math.floor(shore.length * 0.2)];
       const tol = area > 5e7 ? 20 : 6;
@@ -343,10 +382,22 @@ for (const el of osmCtx.elements) {
     labels.push({ kind: 'peak', name: t.name, x: Math.round(x), y: Math.round(y), ele: Math.round(t.ele ? parseFloat(t.ele) : demAt(x, y)) });
   } else if (t.place) {
     const [x, y] = project(el.lon, el.lat);
-    if (!inExtent([x, y]) || !inBasin(x, y)) continue;
+    if (!inExtent([x, y])) continue;
     labels.push({ kind: t.place === 'town' || t.place === 'city' ? 'town' : 'village', name: t.name, x: Math.round(x), y: Math.round(y) });
   }
 }
+// Hand-placed labels for small landmarks that OSM polygons/points do not consistently label.
+for (const [kind, name, lon, lat] of [
+  ['water', 'Profile Lake', -71.6806, 44.1617],
+  ['water', 'The Basin', -71.6817, 44.1195],
+  ['water', 'Pemigewasset River', -71.6810, 44.1315],
+  ['road', 'I-93 / Franconia Notch Parkway', -71.6810, 44.1450],
+  ['road', 'NH-18', -71.7375, 44.1760],
+]) {
+  const [x, y] = project(lon, lat);
+  if (inExtent([x, y])) labels.push({ kind, name, x: Math.round(x), y: Math.round(y) });
+}
+
 // Named lake labels at a point well inside the lake
 for (const lake of lakes) {
   if (!lake.name || lake.area < 150000) continue;
@@ -391,11 +442,12 @@ const usfs = JSON.parse(
 );
 
 const ROAD_NAME = /\b(road|rd|drive|lane|avenue|ave|court|street|boulevard|circle|crescent|way|highway)\b/i;
-const NOT_A_TRAIL = /bike path|shared use path|climb|boulder|approach|acess|access|snow storage|parcourse|decommis|^\d|spires|multipitch|monty python|space invaders|far side/i;
+const NOT_A_TRAIL = /bike path|recreation path|shared use path|climb|boulder|approach|acess|access|snow storage|parcourse|decommis|^\d|spires|multipitch|monty python|space invaders|far side/i;
 const MOTORIZED = /4WD|OHV|JEEP|MOTORCYCLE|SNOWMOBILE|\bSKI\b|NORDIC|WINTER|BOAT|CAMPSITE|STABLES|CORRAL TRAILS|URBAN|BIKE PATH|RACE|XC$/i;
 
 const segments = []; // { name, pts:[[x,y]], hike, bike, bikeInferred, mtbScale, sacScale, surface, operator, source }
 const inBasinLine = (pts) => pts.filter((_, i) => i % 4 === 0 || i === pts.length - 1).some(([x, y]) => inBasin(x, y));
+const inMapLine = (pts) => pts.some(inExtent);
 
 for (const w of osmTrails.elements) {
   const t = w.tags;
@@ -409,7 +461,7 @@ for (const w of osmTrails.elements) {
   if (t.highway === 'footway' && !trailish) continue;
   if (ROAD_NAME.test(name) && !trailish && !designated) continue;
   const pts = w.geometry.map((p) => project(p.lon, p.lat));
-  if (!inBasinLine(pts)) continue;
+  if (!inMapLine(pts)) continue;
   const mid = pts[Math.floor(pts.length / 2)];
   const wild = inWilderness(mid[0], mid[1]);
   const stateParks = /state park|parks and rec/i.test(t.operator || '') || inStatePark(mid[0], mid[1]);
@@ -417,7 +469,7 @@ for (const w of osmTrails.elements) {
   if (['yes', 'designated', 'permissive'].includes(t.bicycle) || t['mtb:scale'] != null) bike = true;
   else if (['no', 'dismount'].includes(t.bicycle)) bike = false;
   const bikeInferred = bike === null;
-  if (bike === null) bike = !wild && !stateParks && t.highway !== 'footway';
+  if (bike === null) bike = false; // Franconia Notch hiking routes are assumed hiking-only unless explicit data says otherwise
   if (wild) bike = false;
   segments.push({
     name,
@@ -464,9 +516,7 @@ const titleCase = (s) =>
   s
     .toLowerCase()
     .replace(/\b([a-z])/g, (c) => c.toUpperCase())
-    .replace(/\bTrt\b/g, 'TRT')
-    .replace(/\bPct\b/g, 'PCT')
-    .replace(/\bNrt\b/g, 'NRT')
+    .replace(/\bAt\b/g, 'AT')
     .replace(/\bMtn\b/g, 'Mountain')
     .replace(/\bMt\.? /g, 'Mount ')
     .replace(/\bMdw\b/g, 'Meadow')
@@ -477,8 +527,8 @@ const titleCase = (s) =>
 const isOn = (v) => v != null && v !== 'N/A' && String(v).trim() !== '';
 
 // Names are compared loosely: "CORRAL TRAIL" and "Corral Trail" are the same trail, and every
-// piece of the Tahoe Rim / Pacific Crest / Tahoe–Yosemite trails belongs to the whole.
-const LONG_DISTANCE = /tahoe rim trail|pacific crest trail|tahoe yosemite trail/i;
+// piece of the Appalachian / Franconia Ridge / Kinsman Ridge trails belongs to the whole.
+const LONG_DISTANCE = /appalachian trail|franconia ridge trail|kinsman ridge trail/i;
 const normName = (n) => {
   const base = n.replace(/\s*\(.*?\)\s*/g, ' ').trim();
   if (LONG_DISTANCE.test(base)) return base.match(LONG_DISTANCE)[0].toLowerCase();
@@ -542,7 +592,7 @@ for (const f of usfs.features) {
     if (isOn(p.bicycle_managed) || isOn(p.bicycle_accpt) || isOn(p.bicycle_accpt_disc)) bike = true;
     else if (isOn(p.bicycle_restricted)) bike = false;
     const bikeInferred = bike === null;
-    if (bike === null) bike = !wild;
+    if (bike === null) bike = false; // White Mountain hiking routes are assumed hiking-only unless explicit data says otherwise
     if (wild) bike = false;
     segments.push({
       name: titleCase(p.trail_name.trim()),
@@ -666,9 +716,9 @@ function measure(lines) {
   return { outLines, length, gain, loss, lo, hi };
 }
 
-// Bikes are prohibited on the entire Pacific Crest Trail, wilderness or not
+// Bikes are prohibited on the Appalachian Trail and in wilderness.
 for (const s of segments) {
-  if (/pacific crest/i.test(s.name)) {
+  if (/appalachian|franconia ridge|kinsman ridge/i.test(s.name)) {
     s.bike = false;
     s.bikeInferred = false;
   }
@@ -740,92 +790,12 @@ trails.forEach((t, i) => {
 console.log(`  ${trails.length} trails, ${trails.reduce((a, t) => a + t.lengthMi, 0).toFixed(0)} miles total`);
 
 // ---------------------------------------------------------------------------
-// 5. Planned changes: USFS Basin Wide Trails Analysis (decision signed Jan 9, 2026)
-//
-// The Forest Supervisor selected Alternative 1. The project's public feature service has the
-// Proposed Action (layer 6), the Alternative 1 additions (layer 5), and new trailheads (layer 3).
-// Trail S59 was excluded from the final decision.
+// 5. Planned changes
 
-console.log('Basin Wide Trails Analysis');
-const BWTA = 'https://services1.arcgis.com/gGHDlz6USftL5Pau/arcgis/rest/services/Basin_Wide_Trails_Data/FeatureServer';
-const bwtaLayer = async (id) =>
-  JSON.parse(await cached(`bwta-${id}.geojson`, () => get(`${BWTA}/${id}/query?where=1%3D1&outFields=*&outSR=4326&f=geojson`)));
-const EXCLUDED_FROM_DECISION = new Set(['S59']);
-
-function classifyPlan(p) {
-  const action = String(p.Action_ ?? '').toLowerCase();
-  const use = String(p.Proposed_A ?? '').toLowerCase();
-  const kind = action.includes('decommission')
-    ? 'decommission'
-    : action.includes('new construction')
-      ? 'new'
-      : action.includes('designate exs') || action.includes('designate exis')
-        ? 'adopt'
-        : 'designate';
-  let mode = 'nonmoto';
-  if (kind === 'decommission') mode = 'none';
-  else if (use.includes('motorcycle')) mode = 'moto';
-  else if (use.includes('ebike allowed') || use.includes('ebike al')) mode = 'ebike';
-  else if (use.includes('ebike prohibited')) mode = 'nonmoto'; // regular bikes still welcome
-  else if (use.includes('bike prohibited') || use.includes('no bikes')) mode = 'foot';
-  return { kind, mode };
-}
-const cleanPlanName = (n) =>
-  String(n ?? 'Unnamed trail')
-    .replace(/^[\s*]+/, '')
-    .trim()
-    .replace(/\bTrial\b/gi, 'Trail')
-    .replace(/Connnector/gi, 'Connector')
-    .replace(/Kingabury/gi, 'Kingsbury')
-    .replace(/Twin Peeks/gi, 'Twin Peaks')
-    .replace(/\bsl\b$/i, 'slope')
-    .replace(/\b([a-z])/g, (c) => c.toUpperCase())
-    .replace(/^Pacific Crest Trail\b.*/i, 'Pacific Crest Trail reroute')
-    .replace(/(?<=.) (To|And|Of|The)\b/g, (w) => w.toLowerCase())
-    .replace(/\s+/g, ' ');
-
-const planGroups = new Map();
-for (const layer of [6, 5]) {
-  for (const f of (await bwtaLayer(layer)).features) {
-    const p = f.properties;
-    if (!f.geometry || EXCLUDED_FROM_DECISION.has(String(p.Proposal_I ?? '').trim())) continue;
-    const { kind, mode } = classifyPlan(p);
-    const name = cleanPlanName(p.Name);
-    const key = `${kind}|${mode}|${name.toLowerCase()}`;
-    if (!planGroups.has(key)) planGroups.set(key, { name, kind, mode, notes: new Set(), pts: [] });
-    const g = planGroups.get(key);
-    if (p.Comments && String(p.Comments).trim()) g.notes.add(String(p.Comments).trim());
-    const parts = f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates];
-    for (const part of parts) g.pts.push(part.map(([lon, lat]) => project(lon, lat)));
-  }
-}
+console.log('Planned changes');
 const plans = [];
-for (const g of planGroups.values()) {
-  const { outLines, length, gain, loss, lo, hi } = measure(chain(g.pts.map((pts) => ({ pts }))));
-  if (length < 20) continue;
-  plans.push({
-    name: g.name,
-    kind: g.kind,
-    mode: g.mode,
-    note: [...g.notes].join('; ') || null,
-    lengthMi: Math.round((length / 1609.34) * 100) / 100,
-    gainFt: Math.round(gain * 3.28084),
-    lossFt: Math.round(loss * 3.28084),
-    minFt: Math.round(lo * 3.28084),
-    maxFt: Math.round(hi * 3.28084),
-    lines: outLines,
-  });
-}
-plans.sort((a, b) => a.name.localeCompare(b.name));
-const trailheads = (await bwtaLayer(3)).features.map((f) => {
-  const [x, y] = project(...f.geometry.coordinates);
-  return { name: `${f.properties.Name.replace(/\s*THD$/, '')} Trailhead`, x: Math.round(x), y: Math.round(y), capacity: f.properties.Capacity, note: f.properties.Comments };
-});
-const sumBy = (k) => plans.filter((p) => `${p.kind}/${p.mode}` === k).reduce((a, p) => a + p.lengthMi, 0).toFixed(1);
-console.log(
-  `  ${plans.length} planned changes: new e-bike ${sumBy('new/ebike')} mi, new non-motorized ${(+sumBy('new/nonmoto') + +sumBy('new/foot')).toFixed(1)} mi, ` +
-    `new moto ${sumBy('new/moto')} mi, decommission ${sumBy('decommission/none')} mi, ${trailheads.length} trailheads`,
-);
+const trailheads = [];
+console.log('  no Franconia Notch future trail overlay configured');
 
 // ---------------------------------------------------------------------------
 // 6. Context roads: a few named roads that matter for getting to trails
@@ -881,7 +851,7 @@ const map = {
   attribution: [
     'Trails © OpenStreetMap contributors (ODbL)',
     'USDA Forest Service National Forest System Trails',
-    'USGS Watershed Boundary Dataset',
+    'Franconia Notch State Park boundary © OpenStreetMap contributors',
     'Elevation: AWS Terrain Tiles (USGS 3DEP, SRTM)',
   ],
 };
@@ -890,9 +860,9 @@ fs.writeFileSync(path.join(OUT, 'trails.json'), JSON.stringify(trails));
 fs.writeFileSync(
   path.join(OUT, 'future.json'),
   JSON.stringify({
-    project: 'Basin Wide Trails Analysis',
-    decision: '2026-01-09',
-    source: 'https://www.fs.usda.gov/r05/laketahoebasin/projects/54566',
+    project: 'Franconia Notch planned trails',
+    decision: null,
+    source: null,
     plans,
     trailheads,
   }),

@@ -279,7 +279,7 @@ export class UI {
       ['Elevation', `${t.minFt.toLocaleString()}′ – ${t.maxFt.toLocaleString()}′`],
       [
         'Source',
-        '<a href="https://www.fs.usda.gov/r05/laketahoebasin/projects/54566" target="_blank" rel="noopener">USFS Basin Wide Trails Analysis</a>, decision signed Jan 9, 2026',
+        'configured planned-trail source',
       ],
     ];
     this.card.innerHTML = `

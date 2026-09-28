@@ -11,7 +11,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const APP_URL = process.env.APP_URL ?? 'http://localhost:5317/';
+const APP_URL = process.env.APP_URL ?? 'http://127.0.0.1:5180/';
 const CHROME_PATH = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const browser = await puppeteer.launch({
@@ -41,9 +41,9 @@ await page.evaluate(() => {
   const el = document.createElement('div');
   el.id = 'og-title';
   el.innerHTML = `
-    <h1><span class="wash"></span>Tahoe<br><em>Trails</em></h1>
-    <p>A watercolor map of the hiking &amp; mountain bike trails around Lake Tahoe</p>
-    <p class="url">trails-fun.warpspire.com</p>`;
+    <h1><span class="wash"></span>Franconia<br><em>Notch</em></h1>
+    <p>A watercolor map of Franconia Notch hiking trails</p>
+    <p class="url">franconia-notch-trails.onrender.com</p>`;
   const fade = document.createElement('div');
   fade.id = 'og-fade';
   document.body.append(fade, el);
