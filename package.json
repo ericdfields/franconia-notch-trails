@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5180 --strictPort",
     "build": "tsc && vite build",
+    "test": "node tests/data-smoke.cjs",
     "preview": "vite preview --host 127.0.0.1 --port 5180 --strictPort",
     "data": "node scripts/build-data.mjs",
     "social": "node scripts/social-images.mjs",
