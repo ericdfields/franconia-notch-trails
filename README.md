@@ -1,9 +1,11 @@
-# Tahoe Trails
+# Franconia Notch Trails
 
-An interactive, watercolor-style isometric model of the hiking and mountain bike trails in the Lake Tahoe Basin.
+An interactive, watercolor-style isometric model of the hiking trail network around Franconia Notch, New Hampshire.
 
 ```
 npm install
+npm run data
+npm run build
 npm run dev
 ```
 
@@ -11,28 +13,9 @@ The [`docs/`](docs/README.md) folder covers what the app is for and how to use i
 
 ## Using it
 
-- **Drag** to pan, **scroll** to zoom, **right-drag** to spin (or `Q` / `E` to rotate 90°, `H` to go home, `U` to hide the interface for screenshots)
+- **Drag** to pan, **scroll** to zoom, **right-drag** to spin (or `Q` / `E` to rotate 90°, `H` to go home, `U` to hide the interface for screenshots).
 - **Click a trail** on the map, or press `/` to search. Arrow keys + Enter pick from the results.
-- Filter to hiking or biking trails. Links like `#trail=Corral%20Trail` open straight to a trail.
-
-## Deploying
-
-It's a static site. `npm run build` writes everything to `dist/`. [`render.yaml`](render.yaml) deploys it as a Render static site: the build command is `npm ci && npm run build`, it publishes `dist/`, and it runs on Node 22.12 or newer.
-
-## Link previews
-
-`index.html` has the Open Graph and Twitter tags. `npm run social` regenerates `public/og-image.png` (the 1200×630 preview card) and `public/apple-touch-icon.png` (drawn from `public/favicon.svg`). It renders them from the running dev server using your local Chrome, so run `npm run dev` first.
-
-## Movies
-
-The map can render smooth 4K movies for presentations: a boat crossing the lake, or a mountain biker riding a route while it draws on in gold. With `npm run dev` running:
-
-```
-npm run film -- armstrong-sidewinder --draft   # 1080p preview, under a minute
-npm run film -- armstrong-sidewinder           # 3840×2160 / 30 fps → renders/
-```
-
-See [docs/films.md](docs/films.md) for the movies so far, the options, and how to make a new ride.
+- Filter to hiking routes or the few bike-legal/source-tagged routes in the broader frame. Links like `#trail=Falling%20Waters%20Trail` open straight to a trail.
 
 ## Data
 
@@ -40,34 +23,20 @@ See [docs/films.md](docs/films.md) for the movies so far, the options, and how t
 
 | What | Source |
 | --- | --- |
-| Basin outline | USGS Watershed Boundary Dataset, HUC8 16050101 |
-| Trails | OpenStreetMap (Overpass) + USFS National Forest System Trails |
-| Lakes, wilderness, state parks, peaks, towns | OpenStreetMap |
-| Elevation + Lake Tahoe bathymetry | AWS Terrain Tiles (Terrarium, z12) |
-| Planned trails (2026 trail plan overlay) | [USFS Basin Wide Trails Analysis](https://www.fs.usda.gov/r05/laketahoebasin/projects/54566) project GIS |
+| Region outline | Franconia Notch State Park boundary from OpenStreetMap |
+| Trails | OpenStreetMap (Overpass) + USDA Forest Service National Forest System Trails |
+| Water, wilderness, state parks, peaks, towns, roads | OpenStreetMap |
+| Elevation | AWS Terrain Tiles (Terrarium, z12) |
 
 How trails are chosen:
 
-- Named OSM paths, bridleways, and designated tracks that touch the basin. Climbing approaches, informal paths, private paths, and paved bike paths are dropped.
-- USFS trails are added wherever OSM doesn't already cover them. Trails that match the USFS inventory are marked **Official**. Motorized, OHV, 4WD, and winter routes are excluded.
-- Segments are grouped into trails by name and connectedness. The Tahoe Rim, Pacific Crest, and Tahoe–Yosemite trails are always kept whole.
-- **Bike access** comes from OSM `bicycle` / `mtb:scale` tags and USFS management data. When neither says, bikes are assumed allowed on USFS land and not allowed in wilderness areas, in state parks, or on the PCT. The trail card says "likely allowed" when access was inferred this way.
+- Named OSM paths, footways, bridleways, and designated tracks in the Franconia Notch frame are kept; paved bike/recreation paths, informal approaches, sidewalks, and motorized/winter routes are dropped.
+- USFS White Mountain National Forest trail lines are added where they do not duplicate OSM coverage.
+- Segments are grouped by name and connectedness. Appalachian Trail, Franconia Ridge Trail, and Kinsman Ridge Trail are kept whole where possible.
+- **Bike access** is conservative for this hiking area: routes are hiking-only unless OSM or USFS data explicitly says bicycles are allowed; wilderness and Appalachian Trail/Ridge segments remain no-bike.
 
-**2026 trail plan overlay.** The Forest Service signed the Basin Wide Trails Analysis decision on January 9, 2026, selecting Alternative 1. The overlay combines the project feature service's Proposed Action layer and Alternative 1 additions, plus its three new trailheads. Trail S59 (Angora to N Upper Trails) is left out because the final decision excluded it. The totals match the Decision Notice:
-
-- New trails: 26 mi open to e-bikes, 14.7 mi non-motorized, 4.2 mi motorcycle
-- About 111 mi of existing trail re-designated for Class 1 e-bikes
-- About 2.5 mi decommissioned
-
-The alignments are planning-level, and construction is phased over several years.
-
-Always check the land manager's current rules and closures before you go.
+Always check current land-manager rules, closures, weather, and alpine conditions before you go.
 
 ## How it's drawn
 
-Three.js with an orthographic camera. The terrain is a 50 m heightmap mesh with 2.3× vertical exaggeration, set in a diorama block. The watercolor look comes from:
-
-- `src/shaders.ts`: an elevation, slope, and noise palette with banded "wet edge" lighting and cool violet shadows
-- A full-screen pass that wobbles the edges, darkens pigment at color boundaries, and adds cold-press paper grain
-
-Trails are screen-space fat lines. Picking projects them to screen space and finds the nearest segment.
+Three.js with an orthographic camera. The terrain is a 50 m heightmap mesh with 2.3× vertical exaggeration, set in a diorama block. The watercolor look comes from shaders that mix elevation, slope, banded wet-edge lighting, cool shadows, edge wobble, pigment boundaries, and cold-press paper grain.

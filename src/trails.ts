@@ -11,7 +11,7 @@ export const COLORS = {
   halo: new THREE.Color('#fffaf0'),
 };
 
-// Planned trails from the 2026 Basin Wide Trails Analysis. Hex values are mirrored in style.css.
+// Optional planned trail overlay colors. Hex values are mirrored in style.css.
 export const PLAN_COLORS = {
   ebike: '#c92f7b', // raspberry: new trail open to bikes + Class 1 e-bikes
   nonmoto: '#3b4fb5', // indigo: new non-motorized trail (no e-bikes)

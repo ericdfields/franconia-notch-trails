@@ -1,12 +1,12 @@
 // Renders a scene from scripts/films/ into a movie, one exact frame at a time.
 //
 //   npm run dev                                        (in another terminal)
-//   npm run film -- keys-to-stanford-rock              4K, 30 fps → renders/keys-to-stanford-rock.mp4
-//   npm run film -- keys-to-stanford-rock --draft      1080p, 15 fps, fast, for checking timing
-//   npm run film -- keys-to-stanford-rock --still 12.5 one PNG at 12.5 seconds
+//   npm run film -- franconia-ridge-traverse              4K, 30 fps → renders/franconia-ridge-traverse.mp4
+//   npm run film -- franconia-ridge-traverse --draft      1080p, 15 fps, fast, for checking timing
+//   npm run film -- franconia-ridge-traverse --still 12.5 one PNG at 12.5 seconds
 //
 // Options: --fps N, --no-captions, --out path.mp4
-// Env: APP_URL (default http://localhost:5317/), CHROME_PATH (default: macOS Chrome)
+// Env: APP_URL (default http://127.0.0.1:5180/), CHROME_PATH (default: macOS Chrome)
 //
 // The page is laid out at 1920×1080 CSS pixels and rendered at 2× for 4K, so labels and
 // captions come out at the same size relative to the frame in every resolution.
@@ -24,13 +24,13 @@ const option = (name, fallback) => {
   return i >= 0 ? args[i + 1] : fallback;
 };
 
-const sceneName = args.find((a) => !a.startsWith('--') && !/^[\d.]+$/.test(a)) ?? 'keys-to-stanford-rock';
+const sceneName = args.find((a) => !a.startsWith('--') && !/^[\d.]+$/.test(a)) ?? 'franconia-ridge-traverse';
 const draft = flag('draft');
 const still = option('still', null);
 const fps = Number(option('fps', draft ? 15 : 30));
 const scale = draft ? 1 : 2;
 const out = path.resolve(option('out', path.join(ROOT, 'renders', `${sceneName}${draft ? '-draft' : ''}.mp4`)));
-const APP_URL = process.env.APP_URL ?? 'http://localhost:5317/';
+const APP_URL = process.env.APP_URL ?? 'http://127.0.0.1:5180/';
 const CHROME_PATH = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const scene = await import(path.join(ROOT, 'scripts', 'films', `${sceneName}.mjs`));

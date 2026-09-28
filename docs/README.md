@@ -1,11 +1,8 @@
-# Tahoe Trails docs
+# Franconia Notch Trails docs
 
-Tahoe Trails is an interactive, hand-painted-looking model of the Lake Tahoe Basin and its hiking and mountain bike trails. These docs describe what the app is for and how to use it.
+Franconia Notch Trails is an interactive, hand-painted-looking model of Franconia Notch, New Hampshire, and its surrounding White Mountain hiking routes.
 
-- **[What it is](overview.md)**: the intent behind the app and what's on the map
-- **[Using the map](using-the-map.md)**: moving around, finding trails, and reading a trail card
-- **[The 2026 trail plan](trail-plan.md)**: the overlay of trails the Forest Service has approved to build
-- **[Where the data comes from](data.md)**: sources, what counts as a trail, and the limits
-- **[Films](films.md)**: rendering 4K movies of the map for presentations, and making new ones
-
-To run it locally, see the [project README](../README.md).
+- **[Overview](overview.md)**: what the map shows and what it is not for
+- **[Using the map](using-the-map.md)**: controls, search, filters, and trail cards
+- **[Where the data comes from](data.md)**: sources and access assumptions
+- **[Films](films.md)**: optional frame-by-frame movie rendering

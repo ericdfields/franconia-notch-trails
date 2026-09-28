@@ -1,15 +1,15 @@
 {
-  "name": "tahoe-trails",
+  "name": "franconia-notch-trails",
   "private": true,
-  "description": "An interactive watercolor isometric map of trails in the Lake Tahoe Basin",
+  "description": "An interactive watercolor isometric map of trails in Franconia Notch",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 127.0.0.1 --port 5180 --strictPort",
     "build": "tsc && vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host 127.0.0.1 --port 5180 --strictPort",
     "data": "node scripts/build-data.mjs",
     "social": "node scripts/social-images.mjs",
     "film": "node scripts/film.mjs"

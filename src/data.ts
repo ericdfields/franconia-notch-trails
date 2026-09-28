@@ -11,7 +11,7 @@ export interface Lake {
 }
 
 export interface Label {
-  kind: 'peak' | 'town' | 'village' | 'lake' | 'trailhead' | 'road';
+  kind: 'peak' | 'town' | 'village' | 'lake' | 'water' | 'trailhead' | 'road';
   name: string;
   x: number;
   y: number;
@@ -37,7 +37,7 @@ export interface MapData {
 export type PlanKind = 'new' | 'designate' | 'adopt' | 'decommission';
 export type PlanMode = 'ebike' | 'nonmoto' | 'foot' | 'moto' | 'none';
 
-/** A change approved in the USFS Basin Wide Trails Analysis (Jan 2026) */
+/** Optional planned trail overlay item */
 export interface Plan {
   kind: PlanKind;
   mode: PlanMode;
@@ -89,7 +89,7 @@ export interface Trail {
   lines: number[][];
 }
 
-export const LAKE_LEVEL = 1898; // Lake Tahoe surface, meters
+export const LAKE_LEVEL = 300; // local base elevation, meters
 export const WORLD_SCALE = 100; // meters per world unit
 export const EXAGGERATION = 2.3; // vertical exaggeration, for drama
 
@@ -216,7 +216,7 @@ export async function loadData() {
       mtbScale: null,
       hikeDifficulty: null,
       surface: null,
-      operator: 'USFS Lake Tahoe Basin Management Unit',
+      operator: 'USFS White Mountain National Forest',
       official: true,
       sources: ['bwta'],
       wilderness: false,
